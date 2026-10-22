@@ -1,0 +1,21 @@
+#Oal
+#|alo
+ yui|#
+
+var a: int := 1
+var b: float := .5
+var c: float := 3.
+var d: int := 3abc
+var e: int := 12_x
+var f: int := @
+var g: int := $
+var h: int := ~
+var ñ: int := 1
+print("cadena sin cerrar
+print("esta linea ya es normal")
+var ok: float := 2.50
+fn
+for i in 0..5 do
+  print(i)
+end
+print("ultima sin cerrar al EOF

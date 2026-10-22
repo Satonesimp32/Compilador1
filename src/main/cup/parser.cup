@@ -1,0 +1,37 @@
+package com.compiler;
+
+import java_cup.runtime.*;
+
+//Reservadas
+terminal FN, IF, LET, VAR, RECORD, THEN, ELIF, ELSE, END;
+terminal WHILE, DO, FOR, IN, RETURN, PRINT, AND, OR, NOT;
+
+//Tipos de datos
+terminal String  TIPO;
+terminal String  IDENTIFICADOR;
+terminal Integer ENTERO;
+terminal Double  FLOTANTE;
+terminal String  CADENA;
+terminal Boolean BOOLEANO;
+
+//Operadores
+terminal String CMP;
+terminal String ADD_SUB;
+terminal String MUL_DIV;
+
+//Simbolos
+terminal ASIG;  // ":="
+terminal RANGO; // ".."
+terminal LPAR;  // "("
+terminal RPAR;  // ")"
+terminal LCOR;  // "["
+terminal RCOR;  // "]"
+terminal LKEY;  // "{"
+terminal RKEY;  // "}"
+terminal COMMA; // ","
+terminal COLON; // ":"
+
+non terminal Integer expr;
+
+expr ::= ENTERO:n    {: RESULT = n; :}
+       ;

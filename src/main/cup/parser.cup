@@ -5,13 +5,15 @@ import java_cup.runtime.*;
 //Reservadas
 terminal FN, IF, LET, VAR, RECORD, THEN, ELIF, ELSE, END;
 terminal WHILE, DO, FOR, IN, RETURN, PRINT, AND, OR, NOT;
+terminal ASIG, RANGO, LPAR, RPAR, LCOR, RCOR, LKEY, RKEY, COMMA, COLON, DOT;
+
 
 //Tipos de datos
-terminal String  TIPO;
+terminal String  TIPO, CADENA;
 terminal String  IDENTIFICADOR;
 terminal Integer ENTERO;
 terminal Double  FLOTANTE;
-terminal String  CADENA;
+//terminal String  CADENA;
 terminal Boolean BOOLEANO;
 
 //Operadores
@@ -31,7 +33,141 @@ terminal RKEY;  // "}"
 terminal COMMA; // ","
 terminal COLON; // ":"
 
+// 3. NO TERMINALES
+non terminal program, declaration_list, declaration;
+non terminal func_decl, param_list_opt, param_list, param, type_opt;
+non terminal var_decl, asig_expr_opt, let_or_var;
+non terminal record_decl, field_decl_list, field_decl;
+non terminal type;
+non terminal block, statement_list, statement;
+non terminal assignment, lvalue, lvalue_tail_list, lvalue_tail;
+non terminal if_stmt, elif_list, else_opt;
+non terminal while_stmt, for_stmt, return_stmt, print_stmt, expr_stmt;
+non terminal expr_opt, expr, primary;
+non terminal array_literal, arg_list_opt, arg_list;
+
+// 4. PRECEDENCIA Y ASOCIATIVIDAD (De menor a mayor precedencia, según la Tabla 5)[cite: 14, 15]
+precedence left OR;
+precedence left AND;
+precedence right NOT;
+precedence nonassoc CMP;
+precedence left ADD_SUB;
+precedence left MUL_DIV;
+precedence right UMINUS;
+
+// 5. REGLAS GRAMATICALES (Traducción de EBNF a CUP)[cite: 14]
+
+program ::= declaration_list ;
+
+declaration_list ::= declaration_list declaration
+                   | /* vacio */ ;
+
+declaration ::= func_decl | var_decl | record_decl ;
+
+func_decl ::= FN IDENTIFICADOR LPAR param_list_opt RPAR type_opt block END ;
+
+param_list_opt ::= param_list
+                 | /* vacio */ ;
+
+param_list ::= param_list COMMA param
+             | param ;
+
+param ::= IDENTIFICADOR COLON type ;
+
+type_opt ::= COLON type
+           | /* vacio */ ;
+
+var_decl ::= let_or_var IDENTIFICADOR COLON type asig_expr_opt ;
+
+let_or_var ::= LET | VAR ;
+
+asig_expr_opt ::= ASIG expr
+                | /* vacio */ ;
+
+record_decl ::= RECORD IDENTIFICADOR field_decl_list END ;
+
+field_decl_list ::= field_decl_list field_decl
+                  | /* vacio */ ;
+
+field_decl ::= IDENTIFICADOR COLON type ;
+
+type ::= TIPO
+       | LCOR ENTERO RCOR type
+       | IDENTIFICADOR ;
+
+block ::= statement_list ;
+
+statement_list ::= statement_list statement
+                 | /* vacio */ ;
+
+statement ::= var_decl
+            | assignment
+            | if_stmt
+            | while_stmt
+            | for_stmt
+            | return_stmt
+            | print_stmt
+            | expr_stmt ;
+
+assignment ::= lvalue ASIG expr ;
+
+lvalue ::= IDENTIFICADOR lvalue_tail_list ;
+
+lvalue_tail_list ::= lvalue_tail_list lvalue_tail
+                   | /* vacio */ ;
+
+lvalue_tail ::= LCOR expr RCOR
+              | DOT IDENTIFICADOR ;
+
+if_stmt ::= IF expr THEN block elif_list else_opt END ;
+
+elif_list ::= elif_list ELIF expr THEN block
+            | /* vacio */ ;
+
+else_opt ::= ELSE block
+           | /* vacio */ ;
+
+while_stmt ::= WHILE expr DO block END ;
+
+for_stmt ::= FOR IDENTIFICADOR IN expr RANGO expr DO block END ;
+
+return_stmt ::= RETURN expr_opt ;
+
+print_stmt ::= PRINT LPAR expr RPAR ;
+
+expr_stmt ::= expr ;
+
+expr_opt ::= expr
+           | /* vacio */ ;
+
+// Expresiones manejadas con la precedencia de CUP[cite: 14, 15]
+expr ::= expr OR expr
+       | expr AND expr
+       | NOT expr
+       | expr CMP expr
+       | expr ADD_SUB expr
+       | expr MUL_DIV expr
+       | ADD_SUB expr %prec UMINUS
+       | primary ;
+
+primary ::= ENTERO
+          | FLOTANTE
+          | CADENA
+          | BOOLEANO
+          | lvalue
+          | IDENTIFICADOR LPAR arg_list_opt RPAR
+          | array_literal
+          | LPAR expr RPAR ;
+
+array_literal ::= LCOR arg_list_opt RCOR ;
+
+arg_list_opt ::= arg_list
+               | /* vacio */ ;
+
+arg_list ::= arg_list COMMA expr
+           | expr ;
 non terminal Integer expr;
+
 
 expr ::= ENTERO:n    {: RESULT = n; :}
        ;

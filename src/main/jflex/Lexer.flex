@@ -100,6 +100,7 @@ CADENA_SIN_CERRAR = \" ([^\"\\\n] | \\. )*
 "}"  { return token(sym.RKEY); }
 ","  { return token(sym.COMMA); }
 ":"  { return token(sym.COLON); }
+"." {return token(sym.DOT);}
 
 /* Ignorados */
 {COMENTARIO}  { /* ignorar */ }

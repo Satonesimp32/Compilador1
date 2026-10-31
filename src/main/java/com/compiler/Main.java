@@ -10,7 +10,7 @@ public class Main {
 
         // Comentar y descomentar para desbichar
         probarLexer(archivo);
-        // probarParser(archivo);
+        probarParser(archivo);
     }
 
     public static void probarLexer(String archivo) {

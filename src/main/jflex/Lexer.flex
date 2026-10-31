@@ -39,6 +39,7 @@ ESPACIO = [ \t\r\n]+
 
 /* Excepciones / Errores lexicos */
 FLOTANTE_SIN_ENTERO = \. [0-9]+
+ENTERO_SIN_FLOTANTE = [0-9]+ \.
 IDENTIFICADOR_CON_NUM = [0-9]+[a-zA-Z_][a-zA-Z0-9_]*
 CADENA_SIN_CERRAR = \" ([^\"\\\n] | \\. )*
 
@@ -109,6 +110,7 @@ CADENA_SIN_CERRAR = \" ([^\"\\\n] | \\. )*
 
 /* Errores */
 {FLOTANTE_SIN_ENTERO}   { error("Float sin parte entera: " + yytext()); }
+{ENTERO_SIN_FLOTANTE}   { error("Float sin parte decimal: " + yytext()); }
 {IDENTIFICADOR_CON_NUM} { error("Identificador no puede iniciar con número: " + yytext()); }
 {CADENA_SIN_CERRAR}     { error("Cadena no cerrada: " + yytext()); }
 .                       { error("Carácter no reconocido: " + yytext()); }

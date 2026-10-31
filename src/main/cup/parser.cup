@@ -5,8 +5,6 @@ import java_cup.runtime.*;
 //Reservadas
 terminal FN, IF, LET, VAR, RECORD, THEN, ELIF, ELSE, END;
 terminal WHILE, DO, FOR, IN, RETURN, PRINT, AND, OR, NOT;
-terminal ASIG, RANGO, LPAR, RPAR, LCOR, RCOR, LKEY, RKEY, COMMA, COLON, DOT;
-
 
 //Tipos de datos
 terminal String  TIPO, CADENA;
@@ -32,8 +30,9 @@ terminal LKEY;  // "{"
 terminal RKEY;  // "}"
 terminal COMMA; // ","
 terminal COLON; // ":"
+terminal DOT;   // "."
 
-// 3. NO TERMINALES
+//NO TERMINALES
 non terminal program, declaration_list, declaration;
 non terminal func_decl, param_list_opt, param_list, param, type_opt;
 non terminal var_decl, asig_expr_opt, let_or_var;
@@ -46,16 +45,15 @@ non terminal while_stmt, for_stmt, return_stmt, print_stmt, expr_stmt;
 non terminal expr_opt, expr, primary;
 non terminal array_literal, arg_list_opt, arg_list;
 
-// 4. PRECEDENCIA Y ASOCIATIVIDAD (De menor a mayor precedencia, según la Tabla 5)[cite: 14, 15]
+//PRECEDENCIA Y ASOCIATIVIDAD
 precedence left OR;
 precedence left AND;
 precedence right NOT;
 precedence nonassoc CMP;
 precedence left ADD_SUB;
 precedence left MUL_DIV;
-precedence right UMINUS;
 
-// 5. REGLAS GRAMATICALES (Traducción de EBNF a CUP)[cite: 14]
+//REGLAS GRAMATICALES
 
 program ::= declaration_list ;
 
@@ -147,7 +145,7 @@ expr ::= expr OR expr
        | expr CMP expr
        | expr ADD_SUB expr
        | expr MUL_DIV expr
-       | ADD_SUB expr %prec UMINUS
+       | ADD_SUB expr
        | primary ;
 
 primary ::= ENTERO
@@ -166,8 +164,3 @@ arg_list_opt ::= arg_list
 
 arg_list ::= arg_list COMMA expr
            | expr ;
-non terminal Integer expr;
-
-
-expr ::= ENTERO:n    {: RESULT = n; :}
-       ;

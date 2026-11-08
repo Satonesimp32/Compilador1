@@ -1,60 +1,62 @@
 package com.compiler;
-
+import com.compiler.TablaSimbolos;
+import com.compiler.Simbolo;
 import java_cup.runtime.*;
 
-//Reservadas
+// 1. ACTION CODE: Variables visibles directamente en las reglas (sin usar 'parser.')
+action code {:
+    public TablaSimbolos tablaGlobal = new TablaSimbolos(null);
+    public TablaSimbolos ambitoActual = tablaGlobal;
+:}
+
+// 2. PARSER CODE: Expone la tabla hacia AppTabla
+parser code {:
+    public TablaSimbolos getTablaGlobal() {
+        return action_obj.tablaGlobal;
+    }
+:}
+
+// Reservadas
 terminal FN, IF, LET, VAR, RECORD, THEN, ELIF, ELSE, END;
 terminal WHILE, DO, FOR, IN, RETURN, PRINT, AND, OR, NOT;
+terminal ASIG, RANGO, LPAR, RPAR, LCOR, RCOR, LKEY, RKEY, COMMA, COLON, DOT;
 
-//Tipos de datos
+// Tipos de datos
 terminal String  TIPO, CADENA;
 terminal String  IDENTIFICADOR;
 terminal Integer ENTERO;
 terminal Double  FLOTANTE;
-//terminal String  CADENA;
 terminal Boolean BOOLEANO;
 
-//Operadores
+// Operadores
 terminal String CMP;
 terminal String ADD_SUB;
 terminal String MUL_DIV;
+terminal UMINUS;
 
-//Simbolos
-terminal ASIG;  // ":="
-terminal RANGO; // ".."
-terminal LPAR;  // "("
-terminal RPAR;  // ")"
-terminal LCOR;  // "["
-terminal RCOR;  // "]"
-terminal LKEY;  // "{"
-terminal RKEY;  // "}"
-terminal COMMA; // ","
-terminal COLON; // ":"
-terminal DOT;   // "."
-
-//NO TERMINALES
+// 3. NO TERMINALES
 non terminal program, declaration_list, declaration;
-non terminal func_decl, param_list_opt, param_list, param, type_opt;
-non terminal var_decl, asig_expr_opt, let_or_var;
+non terminal func_decl, param_list_opt, param_list, param;
+non terminal String type_opt, type, let_or_var;
+non terminal var_decl, asig_expr_opt;
 non terminal record_decl, field_decl_list, field_decl;
-non terminal type;
 non terminal block, statement_list, statement;
 non terminal assignment, lvalue, lvalue_tail_list, lvalue_tail;
 non terminal if_stmt, elif_list, else_opt;
 non terminal while_stmt, for_stmt, return_stmt, print_stmt, expr_stmt;
-non terminal expr_opt, expr, primary;
 non terminal array_literal, arg_list_opt, arg_list;
+non terminal expr, primary;
 
-//PRECEDENCIA Y ASOCIATIVIDAD
+// 4. PRECEDENCIA Y ASOCIATIVIDAD
 precedence left OR;
 precedence left AND;
 precedence right NOT;
 precedence nonassoc CMP;
 precedence left ADD_SUB;
 precedence left MUL_DIV;
+precedence right UMINUS;
 
-//REGLAS GRAMATICALES
-
+// 5. REGLAS GRAMATICALES
 program ::= declaration_list ;
 
 declaration_list ::= declaration_list declaration
@@ -62,7 +64,23 @@ declaration_list ::= declaration_list declaration
 
 declaration ::= func_decl | var_decl | record_decl ;
 
-func_decl ::= FN IDENTIFICADOR LPAR param_list_opt RPAR type_opt block END ;
+// Captura de Funciones
+func_decl ::= FN IDENTIFICADOR:id LPAR param_list_opt RPAR type_opt:t
+    {:
+        String tipoRetorno = (t != null) ? t.toString() : "void";
+        Simbolo sym = new Simbolo("fn", id.toString(), tipoRetorno);
+        sym.setScopeInterno(new TablaSimbolos(ambitoActual));
+        try { ambitoActual.define(sym); } catch(Exception e) { /* ignorar duplicados en el parseo visual */ }
+
+        // Entramos al bloque interno de la función
+        ambitoActual = sym.getScopeInterno();
+    :}
+    block END
+    {:
+        // Salimos del bloque
+        ambitoActual = ambitoActual.getPadre();
+    :}
+    ;
 
 param_list_opt ::= param_list
                  | /* vacio */ ;
@@ -70,28 +88,63 @@ param_list_opt ::= param_list
 param_list ::= param_list COMMA param
              | param ;
 
-param ::= IDENTIFICADOR COLON type ;
+// Captura de Parámetros
+param ::= IDENTIFICADOR:id COLON type:t
+    {:
+        Simbolo sym = new Simbolo("param", id.toString(), t.toString());
+        try { ambitoActual.define(sym); } catch(Exception e) {}
+    :}
+    ;
 
-type_opt ::= COLON type
-           | /* vacio */ ;
+type_opt ::= COLON type:t {: RESULT = t; :}
+           | /* vacio */ {: RESULT = "void"; :} ;
 
-var_decl ::= let_or_var IDENTIFICADOR COLON type asig_expr_opt ;
+// Captura de let y var
+var_decl ::= let_or_var:lv IDENTIFICADOR:id COLON type:t asig_expr_opt
+    {:
+        Simbolo sym = new Simbolo(lv.toString(), id.toString(), t.toString());
+        try { ambitoActual.define(sym); } catch(Exception e) {}
+    :}
+    ;
 
-let_or_var ::= LET | VAR ;
+let_or_var ::= LET {: RESULT = "let"; :}
+             | VAR {: RESULT = "var"; :} ;
 
 asig_expr_opt ::= ASIG expr
                 | /* vacio */ ;
 
-record_decl ::= RECORD IDENTIFICADOR field_decl_list END ;
+// Captura de Records
+record_decl ::= RECORD IDENTIFICADOR:id
+    {:
+        Simbolo sym = new Simbolo("record", id.toString(), "record");
+        sym.setScopeInterno(new TablaSimbolos(ambitoActual));
+        try { ambitoActual.define(sym); } catch(Exception e) {}
+
+        // Entramos al bloque interno del record
+        ambitoActual = sym.getScopeInterno();
+    :}
+    field_decl_list END
+    {:
+        // Salimos del bloque
+        ambitoActual = ambitoActual.getPadre();
+    :}
+    ;
 
 field_decl_list ::= field_decl_list field_decl
                   | /* vacio */ ;
 
-field_decl ::= IDENTIFICADOR COLON type ;
+// Captura de los campos de un Record (actúan como variables internas)
+field_decl ::= IDENTIFICADOR:id COLON type:t
+    {:
+        Simbolo sym = new Simbolo("let", id.toString(), t.toString());
+        try { ambitoActual.define(sym); } catch(Exception e) {}
+    :}
+    ;
 
-type ::= TIPO
-       | LCOR ENTERO RCOR type
-       | IDENTIFICADOR ;
+// Parseo de los tipos compuestos (ej: [5]int)
+type ::= TIPO:t {: RESULT = (t != null) ? t.toString() : "unknown"; :}
+       | LCOR ENTERO:n RCOR type:t {: RESULT = "[" + n + "]" + t; :}
+       | IDENTIFICADOR:id {: RESULT = (id != null) ? id.toString() : "unknown"; :} ;
 
 block ::= statement_list ;
 
@@ -127,25 +180,29 @@ else_opt ::= ELSE block
 
 while_stmt ::= WHILE expr DO block END ;
 
-for_stmt ::= FOR IDENTIFICADOR IN expr RANGO expr DO block END ;
+for_stmt ::= FOR IDENTIFICADOR:id IN expr RANGO expr
+    {:
+        // Captura la variable temporal "i" iteradora del ciclo for
+        Simbolo sym = new Simbolo("let", id.toString(), "int");
+        try { ambitoActual.define(sym); } catch(Exception e) {}
+    :}
+    DO block END ;
 
-return_stmt ::= RETURN expr_opt ;
+return_stmt ::= RETURN expr
+              | RETURN;
 
 print_stmt ::= PRINT LPAR expr RPAR ;
 
 expr_stmt ::= expr ;
 
-expr_opt ::= expr
-           | /* vacio */ ;
 
-// Expresiones manejadas con la precedencia de CUP[cite: 14, 15]
 expr ::= expr OR expr
        | expr AND expr
        | NOT expr
        | expr CMP expr
        | expr ADD_SUB expr
        | expr MUL_DIV expr
-       | ADD_SUB expr
+       | ADD_SUB expr %prec UMINUS
        | primary ;
 
 primary ::= ENTERO

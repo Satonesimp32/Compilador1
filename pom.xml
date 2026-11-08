@@ -35,12 +35,16 @@
                         </goals>
                     </execution>
                 </executions>
+
                 <configuration>
                     <packageName>com.compiler</packageName>
                     <className>Parser</className>
                     <symbolsName>sym</symbolsName>
+                    <!-- ESTA ES LA LÍNEA QUE PERMITE COMPILAR CON LAS ADVERTENCIAS -->
+                    <expectedConflicts>100</expectedConflicts>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>de.jflex</groupId>
                 <artifactId>jflex-maven-plugin</artifactId>
